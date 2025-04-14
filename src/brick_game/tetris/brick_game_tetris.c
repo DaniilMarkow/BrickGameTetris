@@ -3,7 +3,10 @@
 #include <time.h> // Для работы с clock() и CLOCKS_PER_SEC
 #include "include/brick_game_tetris.h"
 // Перенесите объявление Tetromino выше GameState_t
-
+#define WIDTH 10
+#define HEIGHT 20
+// Внешняя ссылка на глобальную переменную current_state
+extern GameState_t current_state;
 typedef enum
 {
     MENU,
@@ -59,18 +62,32 @@ static const Tetromino TETROMINOES[] = {
 // void initializing_field();
 // void spawn_firstPiece();
 // void accoutReset();
-Tetromino get_random_tetromino();
-
-void action_rotate();
-void action_down();
-
-void rotate_tetromino(Tetromino *piece);
+int **copy_tetromino(Tetromino piece);
+void free_next_piece(int **next_piece);
+int **copy_field(int field[20][10]);
+// void userInput(UserAction_t action, bool hold);
+void initializing_game();
 Tetromino get_tetromino_by_index(int index);
-void move_to_left(Tetromino *pice);
+Tetromino get_random_tetromino();
+void action_rotate();
+void rotate_tetromino(Tetromino *piece);
+int is_action_valid(const Tetromino *piece, int field[20][10]);
+void move_to_left(Tetromino *piece);
 void move_to_right(Tetromino *piece);
 void move_to_down(Tetromino *piece);
 int down_valid(const Tetromino *piece, int field[20][10]);
-int is_action_valid(const Tetromino *piece, int field[20][10]);
+void action_down();
+// GameInfo_t updateCurrentState();
+void free_field(int** field);
+int check_level();
+int generating_new_shape();
+static void move_down_auto();
+static int is_collision(Tetromino *piece, int field[20][10]); 
+static void fixing_piece();
+static void save_high_score(int score);
+static void load_high_score();
+static int check_tact_from_level(); 
+static void deleting_line(); 
 
 void userInput(UserAction_t action, bool hold)
 {
@@ -300,11 +317,24 @@ void free_field(int** field) {
     }
     free(field);
 }
-Tetromino* copy_tetromino(Tetromino piece) {
-    Tetromino* new_piece = (Tetromino*)malloc(sizeof(Tetromino));
-    *new_piece = piece;
-    return new_piece;
+int **copy_tetromino(Tetromino piece) {
+    int **next_piece = (int **)malloc(4 * sizeof(int *)); // Allocate rows
+    for (int i = 0; i < 4; i++) {
+        next_piece[i] = (int *)malloc(4 * sizeof(int)); // Allocate columns
+        for (int j = 0; j < 4; j++) {
+            next_piece[i][j] = piece.matrix[i][j]; // Copy data from Tetromino matrix
+        }
+    }
+    return next_piece;
 }
+
+void free_next_piece(int **next_piece) {
+    for (int i = 0; i < 4; i++) {
+        free(next_piece[i]); // Free each row
+    }
+    free(next_piece); // Free the array of pointers
+}
+
 
 int check_level() {
     int new_level = current_state.level;
@@ -330,32 +360,63 @@ int check_level() {
 }
 
 int generating_new_shape() {
-    // Копируем следующую фигуру в текущую
+    printf("Generating new piece...\n");
+    
     current_state.current_piece = current_state.next_piece;
-
-    // Сбрасываем координаты в начальное положение (центр верхнего края)
-    current_state.current_piece.x = (WIDTH - 4) / 2; // Центрирование для матрицы 4x4
-    current_state.current_piece.y = 0;
-
-    // Проверяем коллизию новой фигуры
-    if (is_collision(&current_state.current_piece, current_state.field) {
-        return 0; // Невозможно разместить -> игра окончена
+    current_state.current_piece.x = (WIDTH - 4) / 2; // Центрирование по ширине
+    current_state.current_piece.y = 0; // Начальная позиция сверху
+    
+    if (!is_action_valid(&current_state.current_piece, current_state.field)) {
+        printf("Cannot place new piece. Game Over!\n");
+        return 0; // Игра окончена
     }
-
-    // Генерируем следующую фигуру для preview
+    
     current_state.next_piece = get_random_tetromino();
+    printf("New piece generated successfully.\n");
     return 1;
 }
 
-static void move_down_auto(){
+// int generating_new_shape() {
+//     // Копируем следующую фигуру в текущую
+//     current_state.current_piece = current_state.next_piece;
+
+//     // Сбрасываем координаты в начальное положение (центр верхнего края)
+//     current_state.current_piece.x = (WIDTH - 4) / 2; // Центрирование для матрицы 4x4
+//     current_state.current_piece.y = 0;
+
+//     // Проверяем коллизию новой фигуры
+//     if (is_collision(&current_state.current_piece, current_state.field)) {
+//         return 0; // Невозможно разместить -> игра окончена
+//     }
+
+//     // Генерируем следующую фигуру для preview
+//     current_state.next_piece = get_random_tetromino();
+//     return 1;
+// }
+
+// static void move_down_auto(){
+//     Tetromino temp = current_state.current_piece;
+//     temp.y++;
+//     if (is_collision(&temp, current_state.field))
+//     {
+//         fixing_piece();
+//     }
+//     else
+//     {
+//         current_state.current_piece = temp;
+//     }
+// }
+static void move_down_auto() {
     Tetromino temp = current_state.current_piece;
     temp.y++;
-    if (is_collision(&temp, current_state.field))
-    {
+    
+    printf("Trying to move down...\n");
+    
+    if (is_collision(&temp, current_state.field)) {
+        printf("Collision detected. Fixing piece...\n");
         fixing_piece();
-    }
-    else
-    {
+    } else {
+        printf("Moved down successfully.\n");
         current_state.current_piece = temp;
     }
 }
@@ -385,25 +446,51 @@ static int is_collision(Tetromino *piece, int field[20][10]) {
 }
 return flag_bool;
 }
-static void fixing_piece(){
+static void fixing_piece() {
     Tetromino *piece = &current_state.current_piece;
-
-    for (int i = 0; i < 4; i++){
-        for (int j = 0; j < 4; j++){
-            if(piece->matrix[i][j] == 1){
-                int x = piece->x +j;
-                int y = piece ->y + i;
-
-                if (x>=0 && x < 10 && y >= 0 && y < 20){
+    
+    printf("Fixing piece at position x = %d, y = %d...\n", piece->x, piece->y);
+    
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            if (piece->matrix[i][j]) {
+                int x = piece->x + j;
+                int y = piece->y + i;
+                
+                if (x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT) {
                     current_state.field[y][x] = 1;
+                    printf("Fixed cell at (%d, %d)\n", x, y);
                 }
             }
         }
     }
-    if(!generating_new_shape()){
+    
+    printf("Generating new piece...\n");
+    if (!generating_new_shape()) {
+        printf("Game Over!\n");
         current_state.game_status = GAME_OVER;
     }
 }
+
+// static void fixing_piece(){
+//     Tetromino *piece = &current_state.current_piece;
+
+//     for (int i = 0; i < 4; i++){
+//         for (int j = 0; j < 4; j++){
+//             if(piece->matrix[i][j] == 1){
+//                 int x = piece->x +j;
+//                 int y = piece ->y + i;
+
+//                 if (x>=0 && x < 10 && y >= 0 && y < 20){
+//                     current_state.field[y][x] = 1;
+//                 }
+//             }
+//         }
+//     }
+//     if(!generating_new_shape()){
+//         current_state.game_status = GAME_OVER;
+//     }
+// }
 
 static void save_high_score(int score)
 {
@@ -425,7 +512,6 @@ static void load_high_score() {
         current_state.high_score = 0;
     }
 }
-
 
 
 

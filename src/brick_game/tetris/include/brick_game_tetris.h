@@ -1,8 +1,8 @@
-// brick_game_tetris.h
 #ifndef BRICK_GAME_TETRIS_H
 #define BRICK_GAME_TETRIS_H
 
 #include <stdbool.h>
+
 
 typedef enum
 {
@@ -28,8 +28,8 @@ typedef struct
 } GameInfo_t;
 
 
-
 // Публичные функции
 void userInput(UserAction_t action, bool hold);
 GameInfo_t updateCurrentState();
+
 #endif
