@@ -1,43 +1,39 @@
 #include <ncurses.h>
+#include <stdlib.h>
 #include "../../brick_game/tetris/include/brick_game_tetris.h"
 
-void draw_field(int field[20][10], Tetromino *piece)
-{
-    WINDOW *game_win = newwin(22, 22, 0, 0);
-    box(game_win, 0, 0); // Рисуем рамку
+#define FIELD_COLOR 1
+#define FIGURE_COLOR 2
+#define SIDEBAR_COLOR 3
 
-    // Отрисовка поля
+void init_colors()
+{
+    start_color();
+    init_pair(FIELD_COLOR, COLOR_WHITE, COLOR_BLACK);
+    init_pair(FIGURE_COLOR, COLOR_CYAN, COLOR_BLACK);
+    init_pair(SIDEBAR_COLOR, COLOR_YELLOW, COLOR_BLACK);
+}
+
+void draw_game(WINDOW *win, const GameInfo_t *info)
+{
+    werase(win);
+    box(win, 0, 0);
+
+    // Отрисовка игрового поля
     for (int y = 0; y < 20; y++)
     {
         for (int x = 0; x < 10; x++)
         {
-            if (field[y][x])
+            if (info->field[y][x])
             {
-                mvwprintw(game_win, y + 1, x * 2 + 1, "[]");
+                wattron(win, COLOR_PAIR(FIELD_COLOR));
+                mvwaddch(win, y + 1, x * 2 + 1, '[');
+                mvwaddch(win, y + 1, x * 2 + 2, ']');
+                wattroff(win, COLOR_PAIR(FIELD_COLOR));
             }
         }
     }
-
-    // Отрисовка фигуры
-    for (int i = 0; i < 4; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            if (piece->matrix[i][j])
-            {
-                int px = piece->x + j;
-                int py = piece->y + i;
-                if (py >= 0 && py < 20 && px >= 0 && px < 10)
-                {
-                    mvwprintw(game_win, py + 1, px * 2 + 1, "{}");
-                }
-            }
-        }
-    }
-
-    wrefresh(game_win); // Обновляем окно поля
-    delwin(game_win);
-    refresh(); // Обновляем основной экран
+    wrefresh(win);
 }
 
 int main()
@@ -46,33 +42,37 @@ int main()
     cbreak();
     noecho();
     keypad(stdscr, TRUE);
-    nodelay(stdscr, TRUE);
     curs_set(0);
+    init_colors();
 
-    if (LINES < 22 || COLS < 22)
+    WINDOW *game_win = newwin(22, 22, 1, 1);
+    GameInfo_t game_info = updateCurrentState();
+
+    bool running = true;
+    while (running)
     {
-        endwin();
-        printf("Увеличьте размер терминала (минимум 22x22)\n");
-        return 1;
-    }
-
-    int field[20][10] = {0};
-    Tetromino test_piece = get_tetromino_by_index(1);
-    test_piece.x = 3;
-    test_piece.y = 0;
-
-    // Первая отрисовка
-    draw_field(field, &test_piece);
-    refresh(); // Явное обновление основного экрана
-
-    int ch;
-    while ((ch = getch()) != 'q')
-    {
-        if (ch == KEY_UP)
+        int ch = getch();
+        switch (ch)
         {
-            rotate_tetromino(&test_piece);
+        case KEY_LEFT:
+            userInput(Left, false);
+            break;
+        case KEY_RIGHT:
+            userInput(Right, false);
+            break;
+        case KEY_DOWN:
+            userInput(Down, false);
+            break;
+        case KEY_UP:
+            userInput(Action, false);
+            break;
+        case 'q':
+            running = false;
+            break;
         }
-        draw_field(field, &test_piece);
+
+        game_info = updateCurrentState();
+        draw_game(game_win, &game_info);
         napms(100);
     }
 
