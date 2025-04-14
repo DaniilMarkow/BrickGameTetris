@@ -1,81 +1,59 @@
-#include <ncurses.h>
-#include <stdlib.h>
-#include "../../brick_game/tetris/include/brick_game_tetris.h"
+#include <stdio.h>
+#include "include/brick_game_tetris.h" // Подключаем заголовочный файл с логикой игры
 
-#define FIELD_COLOR 1
-#define FIGURE_COLOR 2
-#define SIDEBAR_COLOR 3
-
-void init_colors()
-{
-    start_color();
-    init_pair(FIELD_COLOR, COLOR_WHITE, COLOR_BLACK);
-    init_pair(FIGURE_COLOR, COLOR_CYAN, COLOR_BLACK);
-    init_pair(SIDEBAR_COLOR, COLOR_YELLOW, COLOR_BLACK);
-}
-
-void draw_game(WINDOW *win, const GameInfo_t *info)
-{
-    werase(win);
-    box(win, 0, 0);
-
-    // Отрисовка игрового поля
-    for (int y = 0; y < 20; y++)
-    {
-        for (int x = 0; x < 10; x++)
-        {
-            if (info->field[y][x])
-            {
-                wattron(win, COLOR_PAIR(FIELD_COLOR));
-                mvwaddch(win, y + 1, x * 2 + 1, '[');
-                mvwaddch(win, y + 1, x * 2 + 2, ']');
-                wattroff(win, COLOR_PAIR(FIELD_COLOR));
+// Функция для отображения игрового поля в CLI
+void display_field(int field[20][10]) {
+    printf("--------------------\n");
+    for (int i = 0; i < 20; i++) {
+        printf("|");
+        for (int j = 0; j < 10; j++) {
+            if (field[i][j] == 0) {
+                printf(" "); // Пустая клетка
+            } else {
+                printf("*"); // Занятая клетка
             }
         }
+        printf("|\n");
     }
-    wrefresh(win);
+    printf("--------------------\n");
 }
 
-int main()
-{
-    initscr();
-    cbreak();
-    noecho();
-    keypad(stdscr, TRUE);
-    curs_set(0);
-    init_colors();
+int main() {
+    // Инициализация игры (например, вызов userInput(Start, false))
+    userInput(Start, false);
 
-    WINDOW *game_win = newwin(22, 22, 1, 1);
-    GameInfo_t game_info = updateCurrentState();
+    // Основной цикл игры
+    while (current_state.game_status == PLAYING) {
+        // 1. Получаем ввод пользователя (пример: 'a' - влево, 'd' - вправо, 's' - вниз)
+        char input;
+        printf("Enter action (a=left, d=right, s=down, r=rotate, q=quit): ");
+        scanf(" %c", &input);
 
-    bool running = true;
-    while (running)
-    {
-        int ch = getch();
-        switch (ch)
-        {
-        case KEY_LEFT:
-            userInput(Left, false);
-            break;
-        case KEY_RIGHT:
-            userInput(Right, false);
-            break;
-        case KEY_DOWN:
-            userInput(Down, false);
-            break;
-        case KEY_UP:
-            userInput(Action, false);
-            break;
-        case 'q':
-            running = false;
-            break;
+        UserAction_t action;
+        switch (input) {
+            case 'a': action = Left; break;
+            case 'd': action = Right; break;
+            case 's': action = Down; break;
+            case 'r': action = Action; break;
+            case 'q': action = Terminate; break;
+            default: action = Start; break;
         }
 
-        game_info = updateCurrentState();
-        draw_game(game_win, &game_info);
-        napms(100);
+        // 2. Обрабатываем ввод пользователя
+        userInput(action, false); // false - означает, что клавиша не удерживается
+
+        // 3. Обновляем состояние игры
+        GameInfo_t game_info = updateCurrentState();
+
+        // 4. Отображаем игру в CLI
+        display_field(game_info.field);
+        printf("Score: %d, Level: %d\n", game_info.score, game_info.level);
+        free_field(game_info.field); // Освобождаем память
+
+        // Дополнительно: показываем следующую фигуру (game_info.next)
+        // ...
     }
 
-    endwin();
+    printf("Game Over!\n");
     return 0;
 }
