@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/time.h>
-#include <time.h> // Для работы с clock() и CLOCKS_PER_SEC
+#include <time.h>
 #include "include/brick_game_tetris.h"
-// Перенесите объявление Tetromino выше GameState_t
+
 #define WIDTH 10
 #define HEIGHT 20
 
@@ -17,7 +17,6 @@ static const Tetromino TETROMINOES[] = {
     {.type = Z, .matrix = {{0, 0, 0, 0}, {0, 1, 1, 0}, {0, 0, 1, 1}, {0, 0, 0, 0}}}};
 
 int **copy_tetromino(Tetromino piece);
-// void free_next_piece(int **next_piece);
 int **copy_field(int field[HEIGHT][WIDTH]);
 void initializing_game(GameState *state);
 Tetromino get_tetromino_by_index(int index);
@@ -27,21 +26,15 @@ void rotate_tetromino(Tetromino *piece);
 int is_action_valid(const Tetromino *piece, int field[HEIGHT][WIDTH]);
 void move_to_left(Tetromino *piece);
 void move_to_right(Tetromino *piece);
-// void move_to_down(Tetromino *piece);
 int down_valid(const Tetromino *piece, int field[HEIGHT][WIDTH]);
 void action_down(GameState *state);
-// GameInfo_t updateCurrentState();
-// void free_field(int **field);
 int check_level(GameState *state);
 int generating_new_shape(GameState *state);
 static void move_down_auto(GameState *state);
-// static int is_collision(Tetromino *piece, int field[HEIGHT][WIDTH]);
 static void fixing_piece(GameState *state);
-// void save_high_score(int score);
 static void load_high_score(GameState *state);
 static int check_tact_from_level(GameState *state);
 static void deleting_line(GameState *state);
-// static int is_game_over(int field[HEIGHT][WIDTH]);
 
 void userInput(UserAction_t action, bool hold, GameState *state)
 {
@@ -91,6 +84,7 @@ void userInput(UserAction_t action, bool hold, GameState *state)
         break;
     }
 }
+
 GameState *createGameState()
 {
     GameState *state = malloc(sizeof(GameState));
@@ -102,10 +96,11 @@ void destroyGameState(GameState *state)
 {
     free(state);
 }
+
 void initializing_game(GameState *state)
 {
-    for (int i = 0; i < 20; i++)
-        for (int j = 0; j < 10; j++)
+    for (int i = 0; i < HEIGHT; i++)
+        for (int j = 0; j < WIDTH; j++)
             state->field[i][j] = 0;
 
     state->score = 0;
@@ -115,9 +110,10 @@ void initializing_game(GameState *state)
     state->current_piece = get_random_tetromino();
     state->next_piece = get_random_tetromino();
     load_high_score(state);
-    state->total_lines_cleared = 0; // Инициализация
+    state->total_lines_cleared = 0;
     state->total_pieces_placed = 0;
 }
+
 Tetromino get_tetromino_by_index(int index)
 {
     return TETROMINOES[index];
@@ -128,20 +124,34 @@ Tetromino get_random_tetromino()
     int index = rand() % 7;
     return TETROMINOES[index];
 }
-//
 
-// ACTION
 void action_rotate(GameState *state)
 {
     Tetromino rotate_piece = state->current_piece;
-
     rotate_tetromino(&rotate_piece);
 
+    // Проверяем, допустима ли новая позиция без смещения
     if (is_action_valid(&rotate_piece, state->field))
     {
         state->current_piece = rotate_piece;
+        return;
     }
+
+    // Пробуем сместить фигуру (wall kick)
+    int offsets[] = {-1, 1, -2, 2}; // Смещения: -1, +1, -2, +2
+    for (int i = 0; i < 4; i++)
+    {
+        Tetromino test_piece = rotate_piece;
+        test_piece.x += offsets[i];
+        if (is_action_valid(&test_piece, state->field))
+        {
+            state->current_piece = test_piece;
+            return;
+        }
+    }
+    // Если ни одно смещение не сработало, поворот не выполняется
 }
+
 void rotate_tetromino(Tetromino *piece)
 {
     int temp[4][4];
@@ -160,31 +170,7 @@ void rotate_tetromino(Tetromino *piece)
         }
     }
 }
-// int is_action_valid(const Tetromino *piece, int field[HEIGHT][WIDTH])
-// {
-//     int flag_bool = 1;
-//     int done = 0;
-//     if (done == 0)
-//     {
-//         for (int i = 0; i < 4; i++)
-//         {
-//             for (int j = 0; j < 4; j++)
-//             {
-//                 if (piece->matrix[i][j])
-//                 {
-//                     int x = piece->x + j;
-//                     int y = piece->y + i;
-//                     if (x < 0 || x >= WIDTH || y >= HEIGHT || field[y][x])
-//                     {
-//                         flag_bool = 0;
-//                         done = 1;
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//     return flag_bool;
-// }
+
 int is_action_valid(const Tetromino *piece, int field[HEIGHT][WIDTH])
 {
     for (int i = 0; i < 4; i++)
@@ -195,12 +181,10 @@ int is_action_valid(const Tetromino *piece, int field[HEIGHT][WIDTH])
             {
                 int x = piece->x + j;
                 int y = piece->y + i;
-                // Сначала проверяем границы
                 if (x < 0 || x >= WIDTH || y < 0 || y > HEIGHT - 1)
                 {
                     return 0;
                 }
-                // Затем безопасно проверяем пересечение
                 if (field[y][x] != 0)
                 {
                     return 0;
@@ -211,24 +195,16 @@ int is_action_valid(const Tetromino *piece, int field[HEIGHT][WIDTH])
     return 1;
 }
 
-// LEFT
 void move_to_left(Tetromino *piece)
 {
     piece->x -= 1;
 }
 
-// RIGHT
 void move_to_right(Tetromino *piece)
 {
     piece->x += 1;
 }
 
-// DOWN
-
-// void move_to_down(Tetromino *piece)
-// {
-//     piece->y += 1;
-// }
 int down_valid(const Tetromino *piece, int field[HEIGHT][WIDTH])
 {
     int done = 0;
@@ -243,7 +219,7 @@ int down_valid(const Tetromino *piece, int field[HEIGHT][WIDTH])
                 {
                     int x = piece->x + j;
                     int y = piece->y + i;
-                    if (y + 1 >= 20 || field[y + 1][x])
+                    if (y + 1 >= HEIGHT || field[y + 1][x])
                     {
                         flag_bool = 0;
                         done = 1;
@@ -254,6 +230,7 @@ int down_valid(const Tetromino *piece, int field[HEIGHT][WIDTH])
     }
     return flag_bool;
 }
+
 void action_down(GameState *state)
 {
     Tetromino down_piece = state->current_piece;
@@ -262,10 +239,9 @@ void action_down(GameState *state)
     {
         state->current_piece = down_piece;
     }
-    //вроде и без этого норм работало
     else
     {
-        fixing_piece(state); // Фиксируем фигуру, если движение вниз невозможно
+        fixing_piece(state);
     }
 }
 
@@ -295,11 +271,11 @@ GameInfo_t updateCurrentState(GameState *state)
 
 int **copy_field(int field[HEIGHT][WIDTH])
 {
-    int **new_field = (int **)malloc(20 * sizeof(int *));
-    for (int i = 0; i < 20; i++)
+    int **new_field = (int **)malloc(HEIGHT * sizeof(int *));
+    for (int i = 0; i < HEIGHT; i++)
     {
-        new_field[i] = (int *)malloc(10 * sizeof(int));
-        for (int j = 0; j < 10; j++)
+        new_field[i] = (int *)malloc(WIDTH * sizeof(int));
+        for (int j = 0; j < WIDTH; j++)
         {
             new_field[i][j] = field[i][j];
         }
@@ -309,21 +285,22 @@ int **copy_field(int field[HEIGHT][WIDTH])
 
 void free_field(int **field)
 {
-    for (int i = 0; i < 20; i++)
+    for (int i = 0; i < HEIGHT; i++)
     {
         free(field[i]);
     }
     free(field);
 }
+
 int **copy_tetromino(Tetromino piece)
 {
-    int **next_piece = (int **)malloc(4 * sizeof(int *)); // Allocate rows
+    int **next_piece = (int **)malloc(4 * sizeof(int *));
     for (int i = 0; i < 4; i++)
     {
-        next_piece[i] = (int *)malloc(4 * sizeof(int)); // Allocate columns
+        next_piece[i] = (int *)malloc(4 * sizeof(int));
         for (int j = 0; j < 4; j++)
         {
-            next_piece[i][j] = piece.matrix[i][j]; // Copy data from Tetromino matrix
+            next_piece[i][j] = piece.matrix[i][j];
         }
     }
     return next_piece;
@@ -333,9 +310,9 @@ void free_next_piece(int **next_piece)
 {
     for (int i = 0; i < 4; i++)
     {
-        free(next_piece[i]); // Free each row
+        free(next_piece[i]);
     }
-    free(next_piece); // Free the array of pointers
+    free(next_piece);
 }
 
 int check_level(GameState *state)
@@ -363,7 +340,6 @@ int check_level(GameState *state)
     else
         new_level = 1;
 
-    // Увеличиваем скорость только при повышении уровня
     if (new_level > state->level)
     {
         state->speed += 100;
@@ -375,61 +351,26 @@ int check_level(GameState *state)
 
 int generating_new_shape(GameState *state)
 {
-   
-
     state->current_piece = state->next_piece;
-    state->current_piece.x = (WIDTH - 4) / 2;        // Центрирование по ширине
-    state->current_piece.y = 0;                      // Начальная позиция сверху
+    state->current_piece.x = (WIDTH - 4) / 2;
+    state->current_piece.y = 0;
 
     if (!is_action_valid(&state->current_piece, state->field))
     {
         printf("Cannot place new piece. Game Over!\n");
-        return 0; // Игра окончена
+        return 0;
     }
 
     state->next_piece = get_random_tetromino();
     state->total_pieces_placed++;
     return 1;
 }
-// int generating_new_shape(GameState *state)
-// {
-//     state->current_piece = state->next_piece;
-//     state->next_piece = get_random_tetromino();
-//     state->current_piece.x = WIDTH / 2 - 2;
-//     state->current_piece.y = 0;
-
-//     // Проверяем, можно ли разместить фигуру на стартовой позиции
-//     if (!is_action_valid(&(state->current_piece), state->field))
-//     {
-//         // Если нельзя, проверяем, заполнена ли верхняя строка
-//         if (is_game_over(state->field))
-//         {
-//             return 0; // Игра окончена
-//         }
-//         // Если верхняя строка не заполнена, пытаемся сместить фигуру вниз
-//         for (int y = 1; y < HEIGHT; y++)
-//         {
-//             state->current_piece.y = y;
-//             if (is_action_valid(&(state->current_piece), state->field))
-//             {
-//                 break; // Нашли допустимую позицию
-//             }
-//         }
-//         // Если не нашли допустимую позицию до конца поля
-//         if (state->current_piece.y >= HEIGHT - 1)
-//         {
-//             return 0; // Игра окончена
-//         }
-//     }
-//     state->total_pieces_placed++;
-//     return 1;
-// }
 
 static void move_down_auto(GameState *state)
 {
     Tetromino temp = state->current_piece;
     temp.y++;
-    if (!is_action_valid(&temp, state->field)) // Если движение вниз невозможно
+    if (!is_action_valid(&temp, state->field))
     {
         fixing_piece(state);
     }
@@ -438,39 +379,6 @@ static void move_down_auto(GameState *state)
         state->current_piece = temp;
     }
 }
-
-// static int is_collision(Tetromino *piece, int field[HEIGHT][WIDTH])
-// {
-//     int flag_bool = 0;
-//     int done = 0;
-
-//     if (done == 0)
-//     {
-//         for (int i = 0; i < 4; i++)
-//         {
-//             for (int j = 0; j < 4; j++)
-//             {
-//                 if (piece->matrix[i][j] == 1)
-//                 {
-//                     int x = piece->x + j;
-//                     int y = piece->y + i;
-
-//                     if (x < 0 || x >= 10 || y < 0 || y >= 20)
-//                     {
-//                         flag_bool = 1;
-//                         done = 1;
-//                     }
-//                     if (field[y][x] != 0)
-//                     {
-//                         flag_bool = 1;
-//                         done = 1;
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//     return flag_bool;
-// }
 
 void save_high_score(int score)
 {
@@ -492,7 +400,6 @@ static void load_high_score(GameState *state)
     }
     else
     {
-        // Если файл не существует, устанавливаем рекорд в 0
         state->high_score = 0;
     }
 }
@@ -505,22 +412,22 @@ static int check_tact_from_level(GameState *state)
 
     if (last_fall.tv_sec == 0 && last_fall.tv_usec == 0)
     {
-        last_fall = now; // Инициализация на первом вызове
+        last_fall = now;
     }
 
     int current_delay_ms = 1000 - (state->level * 50);
     if (current_delay_ms < 100)
         current_delay_ms = 100;
 
-    long required_us = (long)current_delay_ms * 1000; // Перевод ms в микросекунды
+    long required_us = (long)current_delay_ms * 1000;
     long elapsed_us = (now.tv_sec - last_fall.tv_sec) * 1000000L + (now.tv_usec - last_fall.tv_usec);
 
     if (elapsed_us >= required_us)
     {
         last_fall = now;
-        return 1; // Время падения пришло
+        return 1;
     }
-    return 0; // Еще не время
+    return 0;
 }
 
 static void deleting_line(GameState *state)
@@ -585,7 +492,6 @@ static void fixing_piece(GameState *state)
 {
     Tetromino *piece = &(state->current_piece);
 
-    // Фиксация фигуры на поле
     for (int i = 0; i < 4; i++)
     {
         for (int j = 0; j < 4; j++)
@@ -595,32 +501,16 @@ static void fixing_piece(GameState *state)
                 int x = piece->x + j;
                 int y = piece->y + i;
 
-                // Проверка границ и запись в поле
                 if (x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT)
                 {
-                    state->field[y][x] = 1; // Используем state->field вместо current_state.field
+                    state->field[y][x] = 1;
                 }
             }
         }
     }
 
-    // Генерация новой фигуры и проверка завершения игры
     if (!generating_new_shape(state))
-    { // Передаем state в generating_new_shape
+    {
         state->game_status = GAME_OVER;
     }
 }
-
-
-// static int is_game_over(int field[HEIGHT][WIDTH])
-// {
-//     // Проверяем верхнюю строку (y = 0)
-//     for (int x = 0; x < WIDTH; x++)
-//     {
-//         if (field[0][x] == 0) // Если есть хотя бы одна свободная клетка
-//         {
-//             return 0;
-//         }
-//     }
-//     return 1; // Верхняя строка полностью заполнена
-// }
