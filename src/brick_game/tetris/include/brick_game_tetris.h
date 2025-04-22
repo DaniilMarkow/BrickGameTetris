@@ -44,6 +44,8 @@ typedef struct
     int high_score;
     int level;
     int speed;
+    int total_lines_cleared; // Добавлено
+    int total_pieces_placed;
 } GameState;
 
 // Информация для интерфейса
@@ -76,5 +78,7 @@ GameState *createGameState();
 void destroyGameState(GameState *state);
 void userInput(UserAction_t action, bool hold, GameState *state);
 GameInfo_t updateCurrentState(GameState *state);
-
+void free_field(int **field);
+void free_next_piece(int **next_piece);
+void save_high_score(int score);
 #endif

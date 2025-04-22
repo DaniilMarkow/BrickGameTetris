@@ -1,201 +1,215 @@
-// #include "../../brick_game/tetris/include/brick_game_tetris.h"
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <termios.h>
-// #include <string.h>
-// #include <unistd.h>
-// #include <fcntl.h>
-// #include <time.h>
+#include "../../brick_game/tetris/include/brick_game_tetris.h"
+#include <ncurses.h>
 
+#define WIDTH 10
+#define HEIGHT 20
 
+// Функция для запуска игрового цикла
+void run_game(GameState *state, WINDOW *game_win, WINDOW *info_win, WINDOW *next_win, WINDOW *controls_win)
+{
+    while (state->game_status != GAME_OVER)
+    {
+        // Обновить состояние игры
+        GameInfo_t info = updateCurrentState(state);
 
-// #define WIDTH 10  // Added missing definition
+        // Помечаем окна как измененные вместо полной очистки
+        touchwin(game_win);
+        touchwin(info_win);
+        touchwin(next_win);
+        touchwin(controls_win);
 
-// // Terminal control functions
-// static struct termios old_termios, new_termios;
+        // Нарисовать рамки
+        box(game_win, 0, 0);
+        box(info_win, 0, 0);
+        box(next_win, 0, 0);
+        box(controls_win, 0, 0);
 
-// void init_termios(int echo) {
-//     tcgetattr(0, &old_termios);
-//     new_termios = old_termios;
-//     new_termios.c_lflag &= ~ICANON;
-//     new_termios.c_lflag &= echo ? ECHO : ~ECHO;
-//     tcsetattr(0, TCSANOW, &new_termios);
-// }
+        // Нарисовать игровое поле на game_win
+        for (int i = 0; i < HEIGHT; i++)
+        {
+            for (int j = 0; j < WIDTH; j++)
+            {
+                mvwaddch(game_win, i + 1, j + 1, state->field[i][j] ? '#' : ' ');
+            }
+        }
+        // Нарисовать текущую фигуру
+        for (int r = 0; r < 4; r++)
+        {
+            for (int c = 0; c < 4; c++)
+            {
+                if (state->current_piece.matrix[r][c] == 1)
+                {
+                    int py = state->current_piece.y + r;
+                    int px = state->current_piece.x + c;
+                    if (py >= 0 && py < HEIGHT && px >= 0 && px < WIDTH)
+                    {
+                        mvwaddch(game_win, py + 1, px + 1, '#');
+                    }
+                }
+            }
+        }
+        // Если на паузе, нарисовать сообщение
+        if (state->game_status == PAUSED)
+        {
+            mvwprintw(game_win, 10, 1, "Paused - Press 'p' to resume");
+        }
 
-// void reset_termios(void) {
-//     tcsetattr(0, TCSANOW, &old_termios);
-// }
+        // Нарисовать следующую фигуру на next_win
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                mvwaddch(next_win, i + 1, j + 1, state->next_piece.matrix[i][j] ? '#' : ' ');
+            }
+        }
 
-// char getch_(int echo) {
-//     char ch;
-//     init_termios(echo);
-//     ch = getchar();
-//     reset_termios();
-//     return ch;
-// }
+        // Нарисовать информацию на info_win
+        mvwprintw(info_win, 1, 1, "Score: %d", state->score);
+        mvwprintw(info_win, 2, 1, "Level: %d", state->level);
+        mvwprintw(info_win, 3, 1, "High Score: %d", state->high_score);
+        mvwprintw(info_win, 4, 1, "Lines Cleared: %d", state->total_lines_cleared);
+        mvwprintw(info_win, 5, 1, "Pieces Placed: %d", state->total_pieces_placed);
 
-// char getch(void) {
-//     return getch_(0);
-// }
+        // Нарисовать управление на controls_win
+        mvwprintw(controls_win, 1, 1, "Controls: Left/Right: A/D or Arrows, Down: S, Rotate: W or Up, Pause: P, Quit: Q");
 
-// int kbhit(void) {
-//     struct termios oldt, newt;
-//     int ch;
-//     int oldf;
+        // Обновить окна
+        wrefresh(game_win);
+        wrefresh(info_win);
+        wrefresh(next_win);
+        wrefresh(controls_win);
 
-//     tcgetattr(STDIN_FILENO, &oldt);
-//     newt = oldt;
-//     newt.c_lflag &= ~(ICANON | ECHO);
-//     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-//     oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-//     fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+        // Получить ввод пользователя
+        int ch = getch();
+        UserAction_t action;
+        bool has_action = false;
 
-//     ch = getchar();
+        switch (ch)
+        {
+        case KEY_LEFT:
+        case 'a':
+            action = Left;
+            has_action = true;
+            break;
+        case KEY_RIGHT:
+        case 'd':
+            action = Right;
+            has_action = true;
+            break;
+        case KEY_DOWN:
+        case 's':
+            action = Down;
+            has_action = true;
+            break;
+        case KEY_UP:
+        case 'w':
+            action = Action;
+            has_action = true;
+            break;
+        case 'p':
+            action = Pause;
+            has_action = true;
+            break;
+        case 'q':
+            action = Terminate;
+            has_action = true;
+            break;
+        }
 
-//     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-//     fcntl(STDIN_FILENO, F_SETFL, oldf);
+        if (has_action)
+        {
+            userInput(action, false, state);
+        }
 
-//     if (ch != EOF) {
-//         ungetc(ch, stdin);
-//         return 1;
-//     }
+        // Освободить память
+        free_field(info.field);
+        free_next_piece(info.next);
 
-//     return 0;
-// }
+        // Задержка
+        napms(50);
+    }
+}
 
-// // Game drawing function
-// void draw_game(const GameInfo_t* game_info) {
-//     system("clear");
+int main()
+{
+    // Инициализация ncurses
+    initscr();
+    noecho();
+    cbreak();
+    keypad(stdscr, TRUE);
+    timeout(0);
+    curs_set(0);
 
-//     printf("Score: %d\n", game_info->score);
-//     printf("High Score: %d\n", game_info->high_score);
-//     printf("Level: %d\n", game_info->level);
-//     printf("Speed: %d\n\n", game_info->speed);
+    bool play_game = true;
+    while (play_game)
+    {
+        // Создать состояние игры
+        GameState *state = createGameState();
 
-//     // Создаем временную копию поля для временного размещения текущей фигуры
-//     int temp_field[20][10];
-//     memcpy(temp_field, game_info->field, sizeof(temp_field)); // Скопировали оригинальное поле
+        // Создать окна
+        WINDOW *game_win = newwin(22, 12, 0, 0); // Возвращаем 22 строки
+        WINDOW *info_win = newwin(7, 22, 0, 12);
+        WINDOW *next_win = newwin(6, 6, 7, 12);
+        WINDOW *controls_win = newwin(3, 42, 22, 0); // Смещено под game_win
 
-//     // Временное наложение текущей фигуры на поле
-//     for (int i = 0; i < 4; ++i) {
-//         for (int j = 0; j < 4; ++j) {
-//             if (current_state.current_piece.matrix[i][j]) { // Обращаемся к глобальной переменной current_state
-//                 int x = current_state.current_piece.x + j;
-//                 int y = current_state.current_piece.y + i;
+        // Запустить игровой цикл
+        run_game(state, game_win, info_win, next_win, controls_win);
 
-//                 // Если координаты внутри границ поля
-//                 if (x >= 0 && x < WIDTH && y >= 0 && y < 20) {
-//                     temp_field[y][x] = current_state.current_piece.matrix[i][j];
-//                 }
-//             }
-//         }
-//     }
+        // Удалить окна
+        delwin(game_win);
+        delwin(info_win);
+        delwin(next_win);
+        delwin(controls_win);
 
-//     // Отображение поля с наложенной фигурой
-//     for (int y = 0; y < 20; y++) {
-//         printf("|");
-//         for (int x = 0; x < WIDTH; x++) {
-//             printf(temp_field[y][x] ? "#" : " ");
-//         }
-//         printf("|\n");
-//     }
-//     printf("+----------+\n");
+        // Сохранить рекорд
+        save_high_score(state->high_score);
 
-//     // Отображаем следующую фигуру
-//     printf("\nNext piece:\n");
-//     for (int y = 0; y < 4; y++) {
-//         for (int x = 0; x < 4; x++) {
-//             printf(game_info->next[y][x] ? "#" : " ");
-//         }
-//         printf("\n");
-//     }
+        // Создать окно для результатов
+        WINDOW *game_over_win = newwin(10, 40, 5, 5);
+        box(game_over_win, 0, 0);
 
-//     if (game_info->pause) {
-//         printf("\nPAUSED\nPress 'p' to continue\n");
-//     }
-// }
+        // Отобразить результаты
+        mvwprintw(game_over_win, 1, 2, "Game Over!");
+        mvwprintw(game_over_win, 2, 2, "Final Score: %d", state->score);
+        mvwprintw(game_over_win, 3, 2, "High Score: %d", state->high_score);
+        mvwprintw(game_over_win, 4, 2, "Level: %d", state->level);
+        mvwprintw(game_over_win, 5, 2, "Lines Cleared: %d", state->total_lines_cleared);
+        mvwprintw(game_over_win, 6, 2, "Pieces Placed: %d", state->total_pieces_placed);
+        mvwprintw(game_over_win, 8, 2, "[Retry (R)]  [Quit (Q)]");
 
+        wrefresh(game_over_win);
 
-// // Main game loop
-// void game_loop() {
-//     GameInfo_t game_info;
-//     bool running = true;
-    
-//     // Initialize game
-//     userInput(Start, false);
-    
-//     while (running) {
-//         // Handle user input
-//         if (kbhit()) {
-//             char c = getch();
-//             switch (c) {
-//                 case 'q':
-//                     userInput(Terminate, false);
-//                     running = false;
-//                     break;
-//                 case 'p':
-//                     userInput(Pause, false);
-//                     break;
-//                 case 'a':
-//                     userInput(Left, false);
-//                     break;
-//                 case 'd':
-//                     userInput(Right, false);
-//                     break;
-//                 case 's':
-//                     userInput(Down, false);
-//                     break;
-//                 case ' ':
-//                     userInput(Action, false);
-//                     break;
-//             }
-//         }
-        
-//         // Update game state
-//         game_info = updateCurrentState();
-        
-//         // Draw game
-//         draw_game(&game_info);
-        
-//         // Check game over
-//         if (game_info.field == NULL) {
-//             running = false;
-//         }
-        
-//         // Small delay
-//         usleep(10000);
-//     }
-    
-//     // Clean up
-//     if (game_info.field != NULL) {
-//         for (int i = 0; i < 20; i++) {
-//             free(game_info.field[i]);
-//         }
-//         free(game_info.field);
-//     }
-    
-//     if (game_info.next != NULL) {
-//         free(game_info.next);
-//     }
-    
-//     printf("Game Over! Final Score: %d\n", game_info.score);
-// }
+        // Ожидать выбора пользователя
+        int choice;
+        bool game_over = true;
+        while (game_over)
+        {
+            choice = getch();
+            if (choice == 'r' || choice == 'R')
+            {
+                // Очистить окно результатов
+                delwin(game_over_win);
+                clear();
+                refresh();
 
-// int main() {
-//     srand(time(NULL));
-    
-//     printf("Tetris Game\n");
-//     printf("Controls:\n");
-//     printf("a - Move Left\n");
-//     printf("d - Move Right\n");
-//     printf("s - Move Down\n");
-//     printf("space - Rotate\n");
-//     printf("p - Pause\n");
-//     printf("q - Quit\n\n");
-//     printf("Press any key to start...");
-//     getch();
-    
-//     game_loop();
-    
-//     return 0;
-// }
+                // Уничтожить текущее состояние игры
+                destroyGameState(state);
+
+                // Перезапустить игру
+                game_over = false; // Выходим из цикла game_over, внешний цикл перезапустит игру
+            }
+            else if (choice == 'q' || choice == 'Q')
+            {
+                // Завершить игру
+                delwin(game_over_win);
+                play_game = false; // Выходим из внешнего цикла
+                game_over = false;
+            }
+        }
+    }
+
+    // Завершить ncurses
+    endwin();
+
+    return 0;
+}
