@@ -1,19 +1,11 @@
 #ifndef BRICK_GAME_TETRIS_H
 #define BRICK_GAME_TETRIS_H
-
 #include <stdbool.h>
 #include <stdlib.h>
+#include <ncurses.h>
+#define HEIGHT 20
+#define WIDTH 10
 
-// Состояния игры
-typedef enum
-{
-    MENU,
-    PLAYING,
-    PAUSED,
-    GAME_OVER
-} GameStatus;
-
-// Типы тетрамино
 typedef enum
 {
     I,
@@ -25,42 +17,29 @@ typedef enum
     Z
 } TetrominoType;
 
-// Структура тетрамино
 typedef struct
 {
-    int x, y;
     TetrominoType type;
     int matrix[4][4];
+    int x;
+    int y;
+    int color_pair; // Добавляем поле для цветовой пары
 } Tetromino;
 
-// Состояние игры
 typedef struct
 {
-    GameStatus game_status;
+    int field[HEIGHT][WIDTH]; // Теперь поле хранит TetrominoType (0 для пустоты, 1-7 для типов фигур)
     Tetromino current_piece;
     Tetromino next_piece;
-    int field[20][10];
     int score;
     int high_score;
     int level;
     int speed;
-    int total_lines_cleared; // Добавлено
+    int game_status;
+    int total_lines_cleared;
     int total_pieces_placed;
 } GameState;
 
-// Информация для интерфейса
-typedef struct
-{
-    int **field;
-    int **next;
-    int score;
-    int high_score;
-    int level;
-    int speed;
-    int pause;
-} GameInfo_t;
-
-// Действия пользователя
 typedef enum
 {
     Start,
@@ -73,12 +52,30 @@ typedef enum
     Action
 } UserAction_t;
 
-// Публичные функции
+typedef enum
+{
+    PLAYING,
+    PAUSED,
+    GAME_OVER
+} GameStatus;
+
+typedef struct
+{
+    int **field;
+    int **next;
+    int score;
+    int high_score;
+    int level;
+    int speed;
+    int pause;
+} GameInfo_t;
+
 GameState *createGameState();
 void destroyGameState(GameState *state);
 void userInput(UserAction_t action, bool hold, GameState *state);
 GameInfo_t updateCurrentState(GameState *state);
 void free_field(int **field);
-void free_next_piece(int **next_piece);
+void free_next_piece(int **next);
 void save_high_score(int score);
+
 #endif

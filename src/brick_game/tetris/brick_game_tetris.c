@@ -8,13 +8,13 @@
 #define HEIGHT 20
 
 static const Tetromino TETROMINOES[] = {
-    {.type = I, .matrix = {{0, 0, 0, 0}, {1, 1, 1, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}}},
-    {.type = J, .matrix = {{0, 0, 0, 0}, {0, 1, 0, 0}, {0, 1, 1, 1}, {0, 0, 0, 0}}},
-    {.type = L, .matrix = {{0, 0, 0, 0}, {0, 0, 1, 0}, {1, 1, 1, 0}, {0, 0, 0, 0}}},
-    {.type = O, .matrix = {{0, 0, 0, 0}, {0, 1, 1, 0}, {0, 1, 1, 0}, {0, 0, 0, 0}}},
-    {.type = S, .matrix = {{0, 0, 0, 0}, {0, 0, 1, 1}, {0, 1, 1, 0}, {0, 0, 0, 0}}},
-    {.type = T, .matrix = {{0, 0, 0, 0}, {0, 0, 1, 0}, {0, 1, 1, 1}, {0, 0, 0, 0}}},
-    {.type = Z, .matrix = {{0, 0, 0, 0}, {0, 1, 1, 0}, {0, 0, 1, 1}, {0, 0, 0, 0}}}};
+    {.type = I, .matrix = {{0, 0, 0, 0}, {1, 1, 1, 1}, {0, 0, 0, 0}, {0, 0, 0, 0}}, .color_pair = 1},
+    {.type = J, .matrix = {{0, 0, 0, 0}, {0, 1, 0, 0}, {0, 1, 1, 1}, {0, 0, 0, 0}}, .color_pair = 2},
+    {.type = L, .matrix = {{0, 0, 0, 0}, {0, 0, 1, 0}, {1, 1, 1, 0}, {0, 0, 0, 0}}, .color_pair = 3},
+    {.type = O, .matrix = {{0, 0, 0, 0}, {0, 1, 1, 0}, {0, 1, 1, 0}, {0, 0, 0, 0}}, .color_pair = 4},
+    {.type = S, .matrix = {{0, 0, 0, 0}, {0, 0, 1, 1}, {0, 1, 1, 0}, {0, 0, 0, 0}}, .color_pair = 5},
+    {.type = T, .matrix = {{0, 0, 0, 0}, {0, 0, 1, 0}, {0, 1, 1, 1}, {0, 0, 0, 0}}, .color_pair = 6},
+    {.type = Z, .matrix = {{0, 0, 0, 0}, {0, 1, 1, 0}, {0, 0, 1, 1}, {0, 0, 0, 0}}, .color_pair = 7}};
 
 int **copy_tetromino(Tetromino piece);
 int **copy_field(int field[HEIGHT][WIDTH]);
@@ -130,15 +130,13 @@ void action_rotate(GameState *state)
     Tetromino rotate_piece = state->current_piece;
     rotate_tetromino(&rotate_piece);
 
-    // Проверяем, допустима ли новая позиция без смещения
     if (is_action_valid(&rotate_piece, state->field))
     {
         state->current_piece = rotate_piece;
         return;
     }
 
-    // Пробуем сместить фигуру (wall kick)
-    int offsets[] = {-1, 1, -2, 2}; // Смещения: -1, +1, -2, +2
+    int offsets[] = {-1, 1, -2, 2};
     for (int i = 0; i < 4; i++)
     {
         Tetromino test_piece = rotate_piece;
@@ -149,7 +147,6 @@ void action_rotate(GameState *state)
             return;
         }
     }
-    // Если ни одно смещение не сработало, поворот не выполняется
 }
 
 void rotate_tetromino(Tetromino *piece)
@@ -503,7 +500,7 @@ static void fixing_piece(GameState *state)
 
                 if (x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT)
                 {
-                    state->field[y][x] = 1;
+                    state->field[y][x] = piece->type + 1; // Сохраняем тип фигуры (I=1, J=2, ..., Z=7)
                 }
             }
         }
