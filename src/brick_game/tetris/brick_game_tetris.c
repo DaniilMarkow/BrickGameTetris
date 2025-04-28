@@ -23,18 +23,18 @@ Tetromino get_tetromino_by_index(int index);
 Tetromino get_random_tetromino();
 void action_rotate(GameState *state);
 void rotate_tetromino(Tetromino *piece);
-int is_action_valid(const Tetromino *piece, int field[HEIGHT][WIDTH]);
+int is_action_valid(const Tetromino *piece, const int field[HEIGHT][WIDTH]);
 void move_to_left(Tetromino *piece);
 void move_to_right(Tetromino *piece);
-int down_valid(const Tetromino *piece, int field[HEIGHT][WIDTH]);
+// int down_valid(const Tetromino *piece, int field[HEIGHT][WIDTH]);
 void action_down(GameState *state);
 int check_level(GameState *state);
 int generating_new_shape(GameState *state);
-static void move_down_auto(GameState *state);
-static void fixing_piece(GameState *state);
-static void load_high_score(GameState *state);
-static int check_tact_from_level(GameState *state);
-static void deleting_line(GameState *state);
+void move_down_auto(GameState *state);
+void fixing_piece(GameState *state);
+void load_high_score(GameState *state);
+int check_tact_from_level(const GameState *state);
+void deleting_line(GameState *state);
 
 void userInput(UserAction_t action, bool hold, GameState *state)
 {
@@ -136,7 +136,7 @@ void action_rotate(GameState *state)
         return;
     }
 
-    int offsets[] = {-1, 1, -2, 2};
+    const  int offsets[] = {-1, 1, -2, 2};
     for (int i = 0; i < 4; i++)
     {
         Tetromino test_piece = rotate_piece;
@@ -168,7 +168,7 @@ void rotate_tetromino(Tetromino *piece)
     }
 }
 
-int is_action_valid(const Tetromino *piece, int field[HEIGHT][WIDTH])
+int is_action_valid(const Tetromino *piece, const int field[HEIGHT][WIDTH])
 {
     for (int i = 0; i < 4; i++)
     {
@@ -202,31 +202,31 @@ void move_to_right(Tetromino *piece)
     piece->x += 1;
 }
 
-int down_valid(const Tetromino *piece, int field[HEIGHT][WIDTH])
-{
-    int done = 0;
-    int flag_bool = 1;
-    if (done == 1)
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            for (int j = 0; j < 4; j++)
-            {
-                if (piece->matrix[i][j])
-                {
-                    int x = piece->x + j;
-                    int y = piece->y + i;
-                    if (y + 1 >= HEIGHT || field[y + 1][x])
-                    {
-                        flag_bool = 0;
-                        done = 1;
-                    }
-                }
-            }
-        }
-    }
-    return flag_bool;
-}
+// int down_valid(const Tetromino *piece, int field[HEIGHT][WIDTH])
+// {
+//     int done = 0;
+//     int flag_bool = 1;
+//     if (done == 1)
+//     {
+//         for (int i = 0; i < 4; i++)
+//         {
+//             for (int j = 0; j < 4; j++)
+//             {
+//                 if (piece->matrix[i][j])
+//                 {
+//                     int x = piece->x + j;
+//                     int y = piece->y + i;
+//                     if (y + 1 >= HEIGHT || field[y + 1][x])
+//                     {
+//                         flag_bool = 0;
+//                         done = 1;
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//     return flag_bool;
+// }
 
 void action_down(GameState *state)
 {
@@ -314,7 +314,7 @@ void free_next_piece(int **next_piece)
 
 int check_level(GameState *state)
 {
-    int new_level = state->level;
+    int new_level;
 
     if (state->score >= 5400)
         new_level = 10;
@@ -363,7 +363,7 @@ int generating_new_shape(GameState *state)
     return 1;
 }
 
-static void move_down_auto(GameState *state)
+ void move_down_auto(GameState *state)
 {
     Tetromino temp = state->current_piece;
     temp.y++;
@@ -387,7 +387,7 @@ void save_high_score(int score)
     }
 }
 
-static void load_high_score(GameState *state)
+ void load_high_score(GameState *state)
 {
     FILE *file = fopen("highscore.dat", "rb");
     if (file)
@@ -401,7 +401,7 @@ static void load_high_score(GameState *state)
     }
 }
 
-static int check_tact_from_level(GameState *state)
+ int check_tact_from_level(const GameState *state)
 {
     static struct timeval last_fall = {0, 0};
     struct timeval now;
@@ -427,7 +427,7 @@ static int check_tact_from_level(GameState *state)
     return 0;
 }
 
-static void deleting_line(GameState *state)
+ void deleting_line(GameState *state)
 {
     int lines_cleared = 0;
 
@@ -485,9 +485,9 @@ static void deleting_line(GameState *state)
     }
 }
 
-static void fixing_piece(GameState *state)
+ void fixing_piece(GameState *state)
 {
-    Tetromino *piece = &(state->current_piece);
+    const Tetromino *piece = &(state->current_piece);
 
     for (int i = 0; i < 4; i++)
     {

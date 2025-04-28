@@ -1,4 +1,5 @@
 #include "../../brick_game/tetris/include/brick_game_tetris.h"
+#include <ncurses.h>
 
 #define WIDTH 10
 #define HEIGHT 20
@@ -26,9 +27,9 @@ void run_game(GameState *state, WINDOW *game_win, WINDOW *info_win, WINDOW *next
             {
                 if (state->field[i][j] != 0)
                 {
-                    wattron(game_win, COLOR_PAIR(state->field[i][j])); // Включаем цвет (1-7)
+                    wattron(game_win, COLOR_PAIR(state->field[i][j]));
                     mvwaddch(game_win, i + 1, j + 1, '#');
-                    wattroff(game_win, COLOR_PAIR(state->field[i][j])); // Выключаем цвет
+                    wattroff(game_win, COLOR_PAIR(state->field[i][j]));
                 }
                 else
                 {
@@ -79,11 +80,13 @@ void run_game(GameState *state, WINDOW *game_win, WINDOW *info_win, WINDOW *next
             }
         }
 
+        // Отображение информации, включая скорость
         mvwprintw(info_win, 1, 1, "Score: %d", state->score);
         mvwprintw(info_win, 2, 1, "Level: %d", state->level);
         mvwprintw(info_win, 3, 1, "High Score: %d", state->high_score);
         mvwprintw(info_win, 4, 1, "Lines Cleared: %d", state->total_lines_cleared);
         mvwprintw(info_win, 5, 1, "Pieces Placed: %d", state->total_pieces_placed);
+        mvwprintw(info_win, 6, 1, "Speed: %d", state->speed); // Добавляем отображение скорости
 
         mvwprintw(controls_win, 1, 1, "Controls: Left/Right: A/D or Arrows, Down: S, Rotate: W or Up, Pause: P, Quit: Q");
 
@@ -149,7 +152,6 @@ int main()
     timeout(0);
     curs_set(0);
 
-    // Инициализация цветового режима
     if (has_colors() == FALSE)
     {
         endwin();
@@ -158,14 +160,13 @@ int main()
     }
     start_color();
 
-    // Определяем цветовые пары для каждой фигуры
-    init_pair(1, COLOR_CYAN, COLOR_BLACK);    // I - Cyan
-    init_pair(2, COLOR_BLUE, COLOR_BLACK);    // J - Blue
-    init_pair(3, COLOR_WHITE, COLOR_BLACK);   // L - White
-    init_pair(4, COLOR_YELLOW, COLOR_BLACK);  // O - Yellow
-    init_pair(5, COLOR_GREEN, COLOR_BLACK);   // S - Green
-    init_pair(6, COLOR_MAGENTA, COLOR_BLACK); // T - Magenta
-    init_pair(7, COLOR_RED, COLOR_BLACK);     // Z - Red
+    init_pair(1, COLOR_CYAN, COLOR_BLACK);
+    init_pair(2, COLOR_BLUE, COLOR_BLACK);
+    init_pair(3, COLOR_WHITE, COLOR_BLACK);
+    init_pair(4, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(5, COLOR_GREEN, COLOR_BLACK);
+    init_pair(6, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(7, COLOR_RED, COLOR_BLACK);
 
     bool play_game = true;
     while (play_game)
@@ -199,10 +200,11 @@ int main()
 
         wrefresh(game_over_win);
 
-        int choice;
+        
         bool game_over = true;
         while (game_over)
         {
+            int choice;
             choice = getch();
             if (choice == 'r' || choice == 'R')
             {
