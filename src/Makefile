@@ -9,11 +9,13 @@ EXEC = $(BUILD_DIR)/tetris
 TEST_EXEC = $(BUILD_DIR)/test_tetris
 GAME_SRC = brick_game/tetris/brick_game_tetris.c
 CLI_SRC = gui/cli/cli.c
+GUI_SRC = gui/cli/gui.c
 TEST_SRC = brick_game/tests/test_brick_game_tetris.c
 GAME_OBJ = $(BUILD_DIR)/brick_game_tetris.o
 CLI_OBJ = $(BUILD_DIR)/cli.o
+GUI_OBJ = $(BUILD_DIR)/gui.o
 TEST_OBJ = $(BUILD_DIR)/test_brick_game_tetris.o
-OBJ = $(GAME_OBJ) $(CLI_OBJ)
+OBJ = $(GAME_OBJ) $(CLI_OBJ) $(GUI_OBJ)
 
 ifeq ($(OS), Darwin)
     TEST_LDFLAGS = -lm -lcheck
@@ -34,6 +36,9 @@ $(GAME_OBJ): $(GAME_SRC) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(CLI_OBJ): $(CLI_SRC) | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(GUI_OBJ): $(GUI_SRC) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 test: $(TEST_EXEC)
@@ -72,10 +77,10 @@ dist:
 	@echo "No distribution to create"
 
 style:
-	@clang-format -i -style=google brick_game/tetris/*.c brick_game/tetris/include/*.h gui/cli/*.c brick_game/tests/*.c
+	@clang-format -i -style=google brick_game/tetris/*.c brick_game/tetris/include/*.h gui/cli/*.c gui/cli/*.h brick_game/tests/*.c
 
 test_style:
-	@clang-format -n -style=google brick_game/tetris/*.c brick_game/tetris/include/*.h gui/cli/*.c brick_game/tests/*.c
+	@clang-format -n -style=google brick_game/tetris/*.c brick_game/tetris/include/*.h gui/cli/*.c gui/cli/*.h brick_game/tests/*.c
 
 test_valgrind: test
 	rm -rf logs
@@ -86,7 +91,7 @@ test_valgrind: test
 
 test_cppcheck: test
 	@cppcheck --enable=all --suppress=missingIncludeSystem \
-		brick_game/tetris/*.c gui/cli/*.c brick_game/tests/*.c
+		brick_game/tetris/*.c gui/cli/*.c gui/cli/*.h brick_game/tests/*.c
 
 $(BUILD_DIR):
 	mkdir -p $@
