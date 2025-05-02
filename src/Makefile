@@ -16,6 +16,12 @@ CLI_OBJ = $(BUILD_DIR)/cli.o
 GUI_OBJ = $(BUILD_DIR)/gui.o
 TEST_OBJ = $(BUILD_DIR)/test_brick_game_tetris.o
 OBJ = $(GAME_OBJ) $(CLI_OBJ) $(GUI_OBJ)
+DOC_DIR = doc
+DOC_SRC = $(DOC_DIR)/tetris_manual.tex
+DOC_PDF = $(DOC_DIR)/tetris_manual.pdf
+DIST_NAME = tetris_dist
+DOC_SRC = $(DOC_DIR)/tetris_manual.md
+DOC_HTML = $(DOC_DIR)/tetris_manual.html
 
 ifeq ($(OS), Darwin)
     TEST_LDFLAGS = -lm -lcheck
@@ -62,6 +68,9 @@ gcov_report: test
 clean:
 	rm -rf $(BUILD_DIR) *.o *.a *.gcda *.gcno *.gcov coverage.info gcov_report logs s21_test_matrix.dSYM test.info
 	rm -f ./cli.o ../../brick_game/tetris/brick_game_tetris.o tetris
+	rm -f $(DOC_DIR)/tetris_manual.html $(DIST_NAME).tar.gz
+	rm highscore.dat
+	
 
 install: $(EXEC)
 	install -d $(DESTDIR)$(PREFIX)/bin
@@ -70,11 +79,21 @@ install: $(EXEC)
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/tetris
 
-dvi:
-	@echo "No documentation to build"
+
+
+dvi: $(DOC_HTML)
+	$(OPEN_CMD) $(DOC_HTML)
+
+$(DOC_HTML): $(DOC_SRC) | $(DOC_DIR)
+	pandoc $< -o $@
+
+$(DOC_DIR):
+	mkdir -p $@
+	cp tetris_manual.md $@
 
 dist:
-	@echo "No distribution to create"
+	rm -rf $(DIST_NAME).tar.gz
+	tar -czf $(DIST_NAME).tar.gz brick_game gui Makefile $(DOC_DIR)/tetris_manual.md $(DOC_DIR)/fsm_diagram.png
 
 style:
 	@clang-format -i -style=google brick_game/tetris/*.c brick_game/tetris/include/*.h gui/cli/*.c gui/cli/*.h brick_game/tests/*.c
