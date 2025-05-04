@@ -41,7 +41,6 @@ void rotate_tetromino(Tetromino *piece);
 int is_action_valid(const Tetromino *piece, const int field[HEIGHT][WIDTH]);
 void move_to_left(Tetromino *piece);
 void move_to_right(Tetromino *piece);
-// int down_valid(const Tetromino *piece, int field[HEIGHT][WIDTH]);
 void action_down(GameState *state);
 int check_level(GameState *state);
 int generating_new_shape(GameState *state);
@@ -125,21 +124,28 @@ Tetromino get_random_tetromino() {
 void action_rotate(GameState *state) {
   Tetromino rotate_piece = state->current_piece;
   rotate_tetromino(&rotate_piece);
+  int success = 0;
 
   if (is_action_valid(&rotate_piece, state->field)) {
     state->current_piece = rotate_piece;
-    return;
+    success = 1;
   }
 
-  const int offsets[] = {-1, 1, -2, 2};
-  for (int i = 0; i < 4; i++) {
-    Tetromino test_piece = rotate_piece;
-    test_piece.x += offsets[i];
-    if (is_action_valid(&test_piece, state->field)) {
-      state->current_piece = test_piece;
-      return;
+  if (!success) {
+    const int offsets[] = {-1, 1, -2, 2};
+    int i = 0;
+    while (i < 4 && !success) {
+      Tetromino test_piece = rotate_piece;
+      test_piece.x += offsets[i];
+      if (is_action_valid(&test_piece, state->field)) {
+        state->current_piece = test_piece;
+        success = 1;
+      }
+      i++;
     }
   }
+
+  return;
 }
 
 void rotate_tetromino(Tetromino *piece) {
@@ -157,52 +163,29 @@ void rotate_tetromino(Tetromino *piece) {
 }
 
 int is_action_valid(const Tetromino *piece, const int field[HEIGHT][WIDTH]) {
+  int is_valid = 1;
+
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       if (piece->matrix[i][j]) {
         int x = piece->x + j;
         int y = piece->y + i;
         if (x < 0 || x >= WIDTH || y < 0 || y > HEIGHT - 1) {
-          return 0;
+          is_valid = 0;
         }
         if (field[y][x] != 0) {
-          return 0;
+          is_valid = 0;
         }
       }
     }
   }
-  return 1;
+
+  return is_valid;
 }
 
 void move_to_left(Tetromino *piece) { piece->x -= 1; }
 
 void move_to_right(Tetromino *piece) { piece->x += 1; }
-
-// int down_valid(const Tetromino *piece, int field[HEIGHT][WIDTH])
-// {
-//     int done = 0;
-//     int flag_bool = 1;
-//     if (done == 1)
-//     {
-//         for (int i = 0; i < 4; i++)
-//         {
-//             for (int j = 0; j < 4; j++)
-//             {
-//                 if (piece->matrix[i][j])
-//                 {
-//                     int x = piece->x + j;
-//                     int y = piece->y + i;
-//                     if (y + 1 >= HEIGHT || field[y + 1][x])
-//                     {
-//                         flag_bool = 0;
-//                         done = 1;
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//     return flag_bool;
-// }
 
 void action_down(GameState *state) {
   Tetromino down_piece = state->current_piece;
@@ -304,18 +287,23 @@ int check_level(GameState *state) {
 }
 
 int generating_new_shape(GameState *state) {
+  int success = 1;
+
   state->current_piece = state->next_piece;
   state->current_piece.x = (WIDTH - 4) / 2;
   state->current_piece.y = 0;
 
   if (!is_action_valid(&state->current_piece, state->field)) {
     printf("Cannot place new piece. Game Over!\n");
-    return 0;
+    success = 0;
   }
 
-  state->next_piece = get_random_tetromino();
-  state->total_pieces_placed++;
-  return 1;
+  if (success) {
+    state->next_piece = get_random_tetromino();
+    state->total_pieces_placed++;
+  }
+
+  return success;
 }
 
 void move_down_auto(GameState *state) {
@@ -350,6 +338,7 @@ int check_tact_from_level(const GameState *state) {
   static struct timeval last_fall = {0, 0};
   struct timeval now;
   gettimeofday(&now, NULL);
+  int result = 0;
 
   if (last_fall.tv_sec == 0 && last_fall.tv_usec == 0) {
     last_fall = now;
@@ -364,9 +353,10 @@ int check_tact_from_level(const GameState *state) {
 
   if (elapsed_us >= required_us) {
     last_fall = now;
-    return 1;
+    result = 1;
   }
-  return 0;
+
+  return result;
 }
 
 void deleting_line(GameState *state) {
@@ -377,7 +367,7 @@ void deleting_line(GameState *state) {
     for (int x = 0; x < WIDTH; x++) {
       if (state->field[y][x] == 0) {
         line_complete = 0;
-        break;
+        x = WIDTH;  // Имитруем выход из внутреннего цикла
       }
     }
 
