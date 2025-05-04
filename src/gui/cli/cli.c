@@ -21,7 +21,6 @@ void run_game(GameState *state, WINDOW *game_win, WINDOW *info_win,
     box(next_win, 0, 0);
     box(controls_win, 0, 0);
 
-    // Отрисовка игрового поля и текущей фигуры
     draw_game(game_win, &info, &state->current_piece);
     draw_next_piece(next_win, &state->next_piece);
     draw_info(info_win, &info, state->total_lines_cleared,

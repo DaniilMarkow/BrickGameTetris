@@ -170,10 +170,8 @@ int is_action_valid(const Tetromino *piece, const int field[HEIGHT][WIDTH]) {
       if (piece->matrix[i][j]) {
         int x = piece->x + j;
         int y = piece->y + i;
-        if (x < 0 || x >= WIDTH || y < 0 || y > HEIGHT - 1) {
-          is_valid = 0;
-        }
-        if (field[y][x] != 0) {
+        if (x < 0 || x >= WIDTH || y < 0 || y > HEIGHT - 1 ||
+            field[y][x] != 0) {
           is_valid = 0;
         }
       }

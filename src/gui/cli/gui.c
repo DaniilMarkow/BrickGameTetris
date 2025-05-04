@@ -13,7 +13,6 @@ void init_colors() {
 
 void draw_game(WINDOW *win, const GameInfo_t *info,
                const Tetromino *current_piece) {
-  // Отрисовка игрового поля
   for (int y = 0; y < HEIGHT; y++) {
     for (int x = 0; x < WIDTH; x++) {
       if (info->field[y][x] != 0) {
@@ -26,7 +25,6 @@ void draw_game(WINDOW *win, const GameInfo_t *info,
     }
   }
 
-  // Отрисовка текущей фигуры
   for (int r = 0; r < 4; r++) {
     for (int c = 0; c < 4; c++) {
       if (current_piece->matrix[r][c] == 1) {
