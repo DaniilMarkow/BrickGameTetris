@@ -104,7 +104,7 @@ START_TEST(test_action_down) {
     state->field[1][x] = 1;
   }
 
-  action_down(state);
+  move_down_auto(state);
   ck_assert_int_eq(state->game_status, GAME_OVER);
 
   destroyGameState(state);
