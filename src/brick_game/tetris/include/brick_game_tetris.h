@@ -52,7 +52,6 @@ typedef struct {
   int fall_delay;
 } GameInfo_t;
 
-// Декларации функций, которые уже были
 GameState *createGameState();
 void destroyGameState(GameState *state);
 void userInput(UserAction_t action, bool hold, GameState *state);
@@ -61,7 +60,6 @@ void free_field(int **field);
 void free_next_piece(int **next);
 void save_high_score(int score);
 
-// Добавленные декларации для тестируемых функций
 void initializing_game(GameState *state);
 Tetromino get_tetromino_by_index(int index);
 Tetromino get_random_tetromino();
@@ -76,7 +74,6 @@ int check_level(GameState *state);
 int generating_new_shape(GameState *state);
 void action_rotate(GameState *state);
 
-// Функции, которые были static, теперь доступны для тестов
 void move_down_auto(GameState *state);
 void fixing_piece(GameState *state);
 void load_high_score(GameState *state);

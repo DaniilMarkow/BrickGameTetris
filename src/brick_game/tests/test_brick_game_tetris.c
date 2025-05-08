@@ -62,19 +62,16 @@ START_TEST(test_is_action_valid) {
   int field[HEIGHT][WIDTH] = {0};
   ck_assert_int_eq(is_action_valid(&piece, field), 1);
 
-  // Поместим фигуру за пределы поля по x
   piece.x = -1;
   ck_assert_int_eq(is_action_valid(&piece, field), 0);
 
-  // Поместим фигуру за пределы поля по y
   piece.x = (WIDTH - 4) / 2;
   piece.y = HEIGHT;
   ck_assert_int_eq(is_action_valid(&piece, field), 0);
 
-  // Поместим фигуру на занятую клетку
   piece.x = (WIDTH - 4) / 2;
   piece.y = 0;
-  field[1][(WIDTH - 4) / 2] = 1;  // Блок на y=1
+  field[1][(WIDTH - 4) / 2] = 1;
   ck_assert_int_eq(is_action_valid(&piece, field), 0);
 }
 END_TEST
@@ -96,9 +93,8 @@ START_TEST(test_action_down) {
   GameState *state = createGameState();
   state->current_piece = get_tetromino_by_index(0);  // I-фигура
   state->current_piece.x = (WIDTH - 4) / 2;
-  state->current_piece.y = HEIGHT - 2;  // Блоки на y=HEIGHT-1
+  state->current_piece.y = HEIGHT - 2;
 
-  // Заполним строки y=0 и y=1, чтобы новая фигура не могла появиться
   for (int x = 0; x < WIDTH; x++) {
     state->field[0][x] = 1;
     state->field[1][x] = 1;
@@ -145,7 +141,6 @@ START_TEST(test_generating_new_shape) {
   ck_assert_int_eq(state->current_piece.x, (WIDTH - 4) / 2);
   ck_assert_int_eq(state->current_piece.y, 0);
 
-  // Заполним строки y=0 и y=1, чтобы новая фигура не могла появиться
   for (int x = 0; x < WIDTH; x++) {
     state->field[0][x] = 1;
     state->field[1][x] = 1;
@@ -163,7 +158,6 @@ START_TEST(test_move_down_auto) {
   state->current_piece.x = (WIDTH - 4) / 2;
   state->current_piece.y = HEIGHT - 2;
 
-  // Заполним строки y=0 и y=1, чтобы новая фигура не могла появиться
   for (int x = 0; x < WIDTH; x++) {
     state->field[0][x] = 1;
     state->field[1][x] = 1;
@@ -180,7 +174,7 @@ START_TEST(test_fixing_piece) {
   GameState *state = createGameState();
   state->current_piece = get_tetromino_by_index(0);  // I-фигура
   state->current_piece.x = (WIDTH - 4) / 2;
-  state->current_piece.y = HEIGHT - 2;  // Блоки на y=HEIGHT-1
+  state->current_piece.y = HEIGHT - 2;
 
   fixing_piece(state);
   int x = (WIDTH - 4) / 2;
@@ -258,7 +252,6 @@ START_TEST(test_action_rotate) {
 }
 END_TEST
 
-// Новый тест для userInput (действие Start)
 START_TEST(test_userInput_Start) {
   GameState *state = createGameState();
   userInput(Start, false, state);
@@ -269,17 +262,14 @@ START_TEST(test_userInput_Start) {
 }
 END_TEST
 
-// Новый тест для userInput (действие Up)
 START_TEST(test_userInput_Up) {
   GameState *state = createGameState();
   userInput(Up, false, state);
-  // Проверяем, что ничего не изменилось, так как Up не делает ничего
   ck_assert_int_eq(state->game_status, PLAYING);
   destroyGameState(state);
 }
 END_TEST
 
-// Новый тест для userInput (действие Down)
 START_TEST(test_userInput_Down) {
   GameState *state = createGameState();
   state->current_piece = get_tetromino_by_index(0);
@@ -293,7 +283,6 @@ START_TEST(test_userInput_Down) {
 }
 END_TEST
 
-// Новый тест для userInput (действие Right)
 START_TEST(test_userInput_Right) {
   GameState *state = createGameState();
   state->current_piece = get_tetromino_by_index(0);
@@ -305,7 +294,6 @@ START_TEST(test_userInput_Right) {
 }
 END_TEST
 
-// Новый тест для check_level (все диапазоны очков)
 START_TEST(test_check_level_all_ranges) {
   GameState *state = createGameState();
   state->score = 4800;
@@ -324,7 +312,6 @@ START_TEST(test_check_level_all_ranges) {
 }
 END_TEST
 
-// Новый тест для deleting_line (удаление трёх строк)
 START_TEST(test_deleting_line_three) {
   GameState *state = createGameState();
   for (int y = HEIGHT - 1; y > HEIGHT - 4; y--) {
@@ -333,7 +320,7 @@ START_TEST(test_deleting_line_three) {
     }
   }
   deleting_line(state);
-  ck_assert_int_eq(state->score, 700);  // За три строки
+  ck_assert_int_eq(state->score, 700);
   ck_assert_int_eq(state->total_lines_cleared, 3);
   destroyGameState(state);
 }
@@ -342,13 +329,10 @@ END_TEST
 START_TEST(test_action_rotate_wall_kick) {
   GameState *state = createGameState();
   state->current_piece = get_tetromino_by_index(0);  // I-фигура
-  state->current_piece.x = 0;                        // На границе
+  state->current_piece.x = 0;
   state->current_piece.y = HEIGHT / 2;
 
-  // int original_x = state->current_piece.x;
   action_rotate(state);
-  // Проверяем, что фигура сместилась (wall kick) или осталась в допустимой
-  // позиции
   ck_assert_int_ge(state->current_piece.x, 0);
   ck_assert_int_eq(state->current_piece.matrix[0][2], 1);
 
