@@ -73,11 +73,11 @@ clean:
 	
 
 install: $(EXEC)
-	install -d $(DESTDIR)$(PREFIX)/bin
-	install -m 755 $(EXEC) $(DESTDIR)$(PREFIX)/bin/tetris
+	sudo install -d $(DESTDIR)$(PREFIX)/bin
+	sudo install -m 755 $(EXEC) $(DESTDIR)$(PREFIX)/bin/tetris
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/tetris
+	sudo rm -f $(DESTDIR)$(PREFIX)/bin/tetris
 
 
 
