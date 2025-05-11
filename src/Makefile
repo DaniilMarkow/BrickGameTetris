@@ -17,7 +17,6 @@ GUI_OBJ = $(BUILD_DIR)/gui.o
 TEST_OBJ = $(BUILD_DIR)/test_brick_game_tetris.o
 OBJ = $(GAME_OBJ) $(CLI_OBJ) $(GUI_OBJ)
 DOC_DIR = doc
-DOC_SRC = $(DOC_DIR)/tetris_manual.tex
 DIST_NAME = tetris_dist
 DOC_SRC = $(DOC_DIR)/tetris_manual.md
 DOC_HTML = $(DOC_DIR)/tetris_manual.html
