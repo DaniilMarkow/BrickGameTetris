@@ -20,6 +20,8 @@ DOC_DIR = doc
 DIST_NAME = tetris_dist
 DOC_SRC = $(DOC_DIR)/tetris_manual.md
 DOC_HTML = $(DOC_DIR)/tetris_manual.html
+LIB_NAME = libbrick_game_tetris.so
+LIB_PATH = $(BUILD_DIR)/$(LIB_NAME)
 
 ifeq ($(OS), Darwin)
     TEST_LDFLAGS = -lm -lcheck
@@ -64,7 +66,7 @@ gcov_report: test
 	$(OPEN_CMD) gcov_report/index.html
 
 clean:
-	rm -rf $(BUILD_DIR) *.o *.a *.gcda *.gcno *.gcov coverage.info gcov_report logs s21_test_matrix.dSYM test.info
+	rm -rf $(BUILD_DIR) *.o *.so *.a *.gcda *.gcno *.gcov coverage.info gcov_report logs s21_test_matrix.dSYM test.info
 	rm -f ./cli.o ../../brick_game/tetris/brick_game_tetris.o tetris
 	rm -f $(DOC_DIR)/tetris_manual.html $(DIST_NAME).tar.gz
 	rm highscore.dat
@@ -109,6 +111,14 @@ test_valgrind: test
 test_cppcheck: test
 	@cppcheck --enable=all --suppress=missingIncludeSystem \
 		brick_game/tetris/*.c gui/cli/*.c gui/cli/*.h brick_game/tests/*.c
+
+start: $(EXEC)
+	./$(EXEC)
+
+libtetris: $(LIB_PATH)
+
+$(LIB_PATH): $(GAME_SRC) | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -fPIC -shared -o $@ $<
 
 $(BUILD_DIR):
 	mkdir -p $@
