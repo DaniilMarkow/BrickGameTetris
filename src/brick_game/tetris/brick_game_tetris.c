@@ -81,7 +81,7 @@ void userInput(UserAction_t action, bool hold, GameState *state) {
     case Up:
       break;
     case Down:
-      if (!hold) move_down_auto(state);  // был action_down
+      if (!hold) move_down_auto(state);
       break;
     case Action:
       if (!hold) action_rotate(state);
@@ -126,12 +126,10 @@ void action_rotate(GameState *state) {
   rotate_tetromino(&rotate_piece);
   int success = 0;
 
-  // успешный поворот
   if (is_action_valid(&rotate_piece, state->field)) {
     state->current_piece = rotate_piece;
     success = 1;
   }
-  // wall kick от стены по оси X
   if (!success) {
     const int offsets[] = {-1, 1, -2, 2};
     int i = 0;
@@ -149,19 +147,15 @@ void action_rotate(GameState *state) {
   return;
 }
 
-// создаем временную переменную, что бы не перезаписывать исходник тетромино
 void rotate_tetromino(Tetromino *piece) {
   int temp[4][4];
-  // транспонируем матрицу
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       temp[i][j] = piece->matrix[j][i];
     }
   }
-  // разворачиваем строки и столбцы
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
-      // копируем в обратном порядке
       piece->matrix[i][j] = temp[i][3 - j];
     }
   }
@@ -189,16 +183,6 @@ int is_action_valid(const Tetromino *piece, const int field[HEIGHT][WIDTH]) {
 void move_to_left(Tetromino *piece) { piece->x -= 1; }
 
 void move_to_right(Tetromino *piece) { piece->x += 1; }
-
-// void action_down(GameState *state) {
-//   Tetromino down_piece = state->current_piece;
-//   down_piece.y += 1;
-//   if (is_action_valid(&down_piece, state->field)) {
-//     state->current_piece = down_piece;
-//   } else {
-//     fixing_piece(state);
-//   }
-// }
 
 void move_down_auto(GameState *state) {
   Tetromino temp = state->current_piece;
@@ -340,22 +324,17 @@ void load_high_score(GameState *state) {
 int check_tact_from_level(const GameState *state) {
   static struct timeval last_fall = {0, 0};
   struct timeval now;
-  // системная функция для заполнения текущим временем , а NULL про часовой пояс
   gettimeofday(&now, NULL);
   int result = 0;
 
   if (last_fall.tv_sec == 0 && last_fall.tv_usec == 0) {
     last_fall = now;
   }
-  // устанавливаем минимальную задержку, чтобы было по силам на макс уровне
   int current_delay_ms = 1000 - (state->level * 50);
   if (current_delay_ms < 100) current_delay_ms = 100;
-  // перевод в микросек (библиотека в них считает) для задержки падения
   long required_us = (long)current_delay_ms * 1000;
-  // общее время с последнего падения
   long elapsed_us = (now.tv_sec - last_fall.tv_sec) * 1000000L +
                     (now.tv_usec - last_fall.tv_usec);
-  // если разница больше , то обновляем статусы
   if (elapsed_us >= required_us) {
     last_fall = now;
     result = 1;
@@ -366,7 +345,6 @@ int check_tact_from_level(const GameState *state) {
 
 void deleting_line(GameState *state) {
   int lines_cleared = 0;
-  // проверяем заполненность строки
   for (int y = HEIGHT - 1; y >= 0; y--) {
     int line_complete = 1;
     for (int x = 0; x < WIDTH; x++) {
@@ -378,17 +356,12 @@ void deleting_line(GameState *state) {
 
     if (line_complete) {
       lines_cleared++;
-      // сдвигаем все строки выше вниз
       for (int ny = y; ny > 0; ny--) {
-        // копируем значения выше в текущую строку
         for (int x = 0; x < WIDTH; x++) {
-          // сдвигаем вниз заменяя содержимое
           state->field[ny][x] = state->field[ny - 1][x];
         }
       }
-      // отчищаем строчку поля y=0
       for (int x = 0; x < WIDTH; x++) state->field[0][x] = 0;
-      // повторно проверяем строчку , после копирования в нее верхней
       y++;
     }
   }
